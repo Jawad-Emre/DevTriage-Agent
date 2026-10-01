@@ -2,6 +2,7 @@ import streamlit as st
 import time
 import json
 import re
+import inspect
 from datetime import datetime
 from typing import List, Optional
 from pydantic import BaseModel, Field
@@ -9,13 +10,20 @@ from pydantic import BaseModel, Field
 # ---------------------------------------------------------
 # Page Configuration
 # ---------------------------------------------------------
-st.set_page_state_config = getattr(st, "set_page_config", None)
 st.set_page_config(
     page_title="DevTriage AI - API Incident Copilot",
     page_icon="🛡️",
     layout="wide",
     initial_sidebar_state="expanded",
 )
+
+# Cross-version Streamlit full width helper (silences 2026 deprecation warnings)
+def get_stretch_kw():
+    if "width" in inspect.signature(st.button).parameters:
+        return {"width": "stretch"}
+    return {"use_container_width": True}
+
+STRETCH = get_stretch_kw()
 
 # ---------------------------------------------------------
 # Pydantic Schemas for Strict Data Validation
@@ -48,7 +56,7 @@ DEFAULT_DOCS = [
         "area": "Authentication",
         "error_code": "ERR_WEBHOOK_SIG_MISMATCH",
         "keywords": ["signature", "hmac", "sha256", "webhook", "401", "unauthorized"],
-        "content": "Signatures are computed as HMAC-SHA256(timestamp + '.' + raw_body, webhook_secret). Common bug: parsing JSON before verifying signature Alters whitespace and causes hash mismatch.",
+        "content": "Signatures are computed as HMAC-SHA256(timestamp + '.' + raw_body, webhook_secret). Common bug: parsing JSON before verifying signature alters whitespace and causes hash mismatch.",
         "fix_code": "import hmac, hashlib\n# Ensure raw unparsed body bytes are passed!\ncomputed = hmac.new(WEBHOOK_SECRET.encode(), f'{timestamp}.{raw_body}'.encode(), hashlib.sha256).hexdigest()\nif not hmac.compare_digest(computed, received_signature):\n    raise ValueError('Signature mismatch')",
         "citation": "Docs: Security / Webhook Signature Verification (v3.2)",
     },
@@ -104,7 +112,7 @@ def render_login():
         with st.form("login_form"):
             email = st.text_input("Work Email", value="demo@company.com")
             password = st.text_input("Password", value="triage2026", type="password")
-            submitted = st.form_submit_button("Sign In to Triage Portal", use_container_width=True)
+            submitted = st.form_submit_button("Sign In to Triage Portal", **STRETCH)
 
             if submitted:
                 if (email == "demo@company.com" and password == "triage2026") or len(password) >= 4:
@@ -115,7 +123,7 @@ def render_login():
                     st.error("Invalid credentials. Please use the dummy credentials provided above.")
         
         st.markdown("<div style='text-align: center;'>— or —</div>", unsafe_allow_html=True)
-        if st.button("⚡ 1-Click Instant Demo Login (Reviewer Bypass)", use_container_width=True):
+        if st.button("⚡ 1-Click Instant Demo Login (Reviewer Bypass)", **STRETCH):
             st.session_state["authenticated"] = True
             st.rerun()
 
@@ -175,7 +183,7 @@ def run_triage_pipeline(raw_log: str, service_name: str) -> IncidentPacket:
             timestamp=timestamp,
             raw_log=raw_log,
             extraction=extraction,
-            confidence_score=0.99,  # High confidence that human intervention is mandatory
+            confidence_score=0.99,
             citations=["Deterministic Safety Guardrail Rule #SEC-01: Credential / Outage Shield"],
             proposed_fix="[SAFETY GATE HALT] Potential secret exposure or P1 incident detected. Automated LLM execution terminated. Immediate human review required.",
             status="ESCALATED_SAFETY"
@@ -204,7 +212,6 @@ def run_triage_pipeline(raw_log: str, service_name: str) -> IncidentPacket:
     confidence = min(0.96, max(0.25, max_score))
 
     if best_doc and confidence >= 0.70:
-        # High confidence grounded fix
         proposed_fix = f"""### Root Cause
 Identified documented error code `{best_doc['error_code']}` in `{best_doc['area']}`.
 
@@ -219,7 +226,6 @@ Identified documented error code `{best_doc['error_code']}` in `{best_doc['area'
         citations = [best_doc["citation"], f"Chunk ID: {best_doc['id']}"]
         status = "RESOLVED_BY_AI"
     else:
-        # Low confidence or missing documentation
         proposed_fix = f"No authoritative documentation chunk matches this error pattern (confidence {confidence:.2f} < 0.70). Packet compiled for on-call engineer triage."
         citations = ["Pinecone Index Search: No chunk exceeded cosine similarity threshold of 0.70"]
         status = "ESCALATED_LOW_CONFIDENCE"
@@ -270,7 +276,7 @@ with st.sidebar:
     st.text("Confidence Gate: 0.70 Tuned")
 
     st.divider()
-    if st.button("Sign Out", use_container_width=True):
+    if st.button("Sign Out", **STRETCH):
         st.session_state["authenticated"] = False
         st.rerun()
 
@@ -313,7 +319,7 @@ with tab1:
         log_input = st.text_area("Paste API Error, Stack Trace, or cURL Output:", value=default_log, height=160)
     with col_in2:
         service_input = st.text_input("Affected Service / Component:", value=default_service)
-        run_btn = st.button("🚀 Run Triage Pipeline", type="primary", use_container_width=True)
+        run_btn = st.button("🚀 Run Triage Pipeline", type="primary", **STRETCH)
 
     if run_btn:
         if not log_input.strip():
@@ -452,9 +458,9 @@ with tab4:
     st.caption("Confidence-Gated Developer Incident Triage Copilot with Human-in-the-Loop Flywheel.")
 
     try:
-        st.image("D:/DevTriage-Ai/architecture.png", caption="DevTriage AI - End-to-End System Architecture", use_container_width=True)
+        st.image("architecture.png", caption="DevTriage AI - End-to-End System Architecture", **STRETCH)
     except Exception:
-        st.info("Architecture diagram located at `D:/DevTriage-Ai/architecture.png`")
+        st.info("Architecture diagram located at `architecture.png`")
 
     st.markdown("""
     #### Architectural Highlights:
