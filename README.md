@@ -1,7 +1,7 @@
-# 🛡️ DevTriage AI
+# 🛡️ DevTriage Agent
 **Autonomous, Confidence-Gated API Incident & Developer Triage Copilot**
 
-DevTriage AI is an enterprise-grade incident copilot built for backend engineers and Developer Experience (DevEx) teams. When developers encounter cryptic stack traces, 4xx/5xx API responses, or webhook delivery failures, DevTriage diagnoses the issue against authoritative documentation with deterministic safety gating and an active learning feedback loop.
+DevTriage Agent is an enterprise-grade incident copilot built for backend engineers and Developer Experience (DevEx) teams. When developers encounter cryptic stack traces, 4xx/5xx API responses, or webhook delivery failures, DevTriage diagnoses the issue against authoritative documentation with deterministic safety gating and an active learning feedback loop.
 
 ---
 
@@ -51,9 +51,9 @@ flowchart TD
         MB["<b>Model B</b><br/>Fallback 1"]
         MC["<b>Model C</b><br/>Fallback 2"]
         MSAFE["<b>Safe fallback</b><br/>Queue + escalate"]
-        MA -- "429 / timeout" --> MB
-        MB -- "429 / timeout" --> MC
-        MC -- "all failed" --> MSAFE
+        MA -->|429 / timeout| MB
+        MB -->|429 / timeout| MC
+        MC -->|all failed| MSAFE
     end
 
     ESC["<b>Escalation packet</b><br/>Card + docs checked"]:::human
@@ -61,20 +61,20 @@ flowchart TD
     REIDX["<b>Re-index fix</b><br/>Embed + upsert"]:::human
 
     U --> GW --> SP
-    SP -- "yes" --> ESC
-    SP -- "no" --> EXT
+    SP -->|yes| ESC
+    SP -->|no| EXT
     EXT --> EQ --> PS
-    D4 -. "search" .-> PS
+    D4 -.->|search| PS
     PS --> DF --> GC --> CG
-    CG -- "high" --> ANS
-    CG -- "low" --> ESC
-    ANS -. "not helped" .-> ESC
+    CG -->|high| ANS
+    CG -->|low| ESC
+    ANS -.->|not helped| ESC
     ESC --> REV --> REIDX
-    REIDX -. "approved fixes re-indexed" .-> D4
+    REIDX -.->|approved fixes re-indexed| D4
 
-    EXT -.-> LLM_CHAIN
-    DF -.-> LLM_CHAIN
-    GC -.-> LLM_CHAIN
+    EXT -.-> MA
+    DF -.-> MA
+    GC -.-> MA
 ```
 
 ---
@@ -83,12 +83,14 @@ flowchart TD
 
 ### 1. Clone Repository
 ```bash
-git clone https://github.com/<your-username>/DevTriage-Ai.git
-cd DevTriage-Ai
+git clone https://github.com/Jawad-Emre/DevTriage-Agent.git
+cd DevTriage-Agent
 ```
 
 ### 2. Install Dependencies
 ```bash
+python -m venv .venv
+.\.venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
